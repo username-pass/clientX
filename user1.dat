@@ -1,0 +1,34 @@
+{
+  "MASTER_KEY": {
+    "__type": "Uint8Array",
+    "data": "9QCGzOSyTkkQ5JmCAABxyp2dsQGNdEKMKWO6Mt50KUY="
+  },
+  "IDENTITY_KEY": {
+    "publicKey": {
+      "__type": "Uint8Array",
+      "data": "wqdpReqG+b8XvmCy821OBpg+PUk3kBNYCH7sZDKta+k="
+    },
+    "privateKey": {
+      "__type": "Uint8Array",
+      "data": "2+5Xws9gFJipmF1d3ChTR+v+V8nBwhdFMPA5O8v4f6jCp2lF6ob5vxe+YLLzbU4GmD49STeQE1gIfuxkMq1r6Q=="
+    },
+    "keyType": "ed25519"
+  },
+  "PEER_ID": "0_FETTM1Nhf3aJP6a-E75P9gIizCrwWXjBdvJ04vmva2tyO3bgHD4wxMow8FWeQnepiiRw7zFtKrZyy4z5LoyLAx",
+  "META": {
+    "formatVersion": 1,
+    "version": {}
+  },
+  "known_users": {
+    "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx": {
+      "trusted": false,
+      "handshaked": false,
+      "notes": "",
+      "display_name": "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx",
+      "nickname": "",
+      "id": "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx",
+      "session_keypair": {}
+    }
+  },
+  "channels": {}
+}

@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security",
+    "jsdom": "^24.0.0",
+    "libsodium-wrappers": "^0.7.13",
+    "path": "^0.12.7"
+  }
+}

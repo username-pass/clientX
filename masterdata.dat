@@ -1,0 +1,24 @@
+{
+  "MASTER_KEY": {
+    "__type": "Uint8Array",
+    "data": "9QCGzOSyTkkQ5JmCAABxyp2dsQGNdEKMKWO6Mt50KUY="
+  },
+  "IDENTITY_KEY": {
+    "publicKey": {
+      "__type": "Uint8Array",
+      "data": "9QCGzOSyTkkQ5JmCAABxyp2dsQGNdEKMKWO6Mt50KUY="
+    },
+    "privateKey": {
+      "__type": "Uint8Array",
+      "data": "HsIxv1qaCjlKygaFfqfsRFGc02eG4O2VUhkpzareEmT1AIbM5LJOSRDkmYIAAHHKnZ2xAY10QowpY7oy3nQpRg=="
+    },
+    "keyType": "ed25519"
+  },
+  "PEER_ID": "0CpVqTReLiYTtTwCDeABx1XgOZSPD6ZNwoh1zD2nX6wUQgEya4Zoa9_EsEDG8wluqZ38ph3njWiipjdUDvF3N3Ax",
+  "META": {
+    "formatVersion": 1,
+    "version": {}
+  },
+  "known_users": {},
+  "channels": {}
+}

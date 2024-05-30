@@ -1,0 +1,198 @@
+class WrappedPeer{
+  constructor (id, options) {
+
+    options ??= {};
+    const stunServer = {
+      urls: 'STUN:freeturn.net:5349'
+    };
+
+    const turnServer = {
+      urls: 'TURNS:freeturn.net:5349',
+      username: 'free',
+      credential: 'free'
+    };
+
+    // Options object for Peer constructor
+    options = {
+      ...options,
+      config: {
+        //iceServers: [stunServer, turnServer]
+        iceServers: [
+          {url: 'stun:stun.cloudflare.com:3478'},
+          {url: "turn:turn.cloudflare.com:3478?transport=udp",
+            "username":"a93656553edbd5f19df76ee9cd5dab82916ad2b9948b9223f91e07c65647c3b8e55eea299dff3b746f1b3280bf783fdf",
+            "credential":"45663dad0669c975f1fe22fd21a611037ef590b19d7bca6ea53dea3831116617300e4b0dab87b6929501dea7e987abda"}
+        ]
+        /*"iceServers":
+        {
+          "urls": [
+            "stun:stun.cloudflare.com:3478",
+            "turn:turn.cloudflare.com:3478?transport=udp",
+            "turn:turn.cloudflare.com:3478?transport=tcp",
+            "turns:turn.cloudflare.com:5349?transport=tcp"
+          ],
+          "username":"a93656553edbd5f19df76ee9cd5dab82916ad2b9948b9223f91e07c65647c3b8e55eea299dff3b746f1b3280bf783fdf",
+          "credential":"45663dad0669c975f1fe22fd21a611037ef590b19d7bca6ea53dea3831116617300e4b0dab87b6929501dea7e987abda"
+        }*/
+      },
+      debug: 3
+    };
+
+    this.id ??= USERDATA.PEER_ID || id || '0'+sodium.to_base64(sodium.randombytes_buf(62))+'x';
+    this.peer = new Peer(this.id, options);
+    this.connectionsManager = new connectionsManager(this.peer);
+    this.initListeners();
+  }
+  initListeners () {
+    this.peer.on('disconnected', () => {
+      this.disconnect(true);
+    });
+    this.peer.on('close', () => {
+      this.disconnect(true);
+    });
+    this.peer.on('error', (err) => {
+      if (err.type == 'disconnected') this.disconnect(true);
+      console.log(err);
+    });
+    this.peer.on('connection', (dataConnection) => {
+      this.connectionsManager.addConnection(dataConnection.peer, null, dataConnection);
+    });
+    this.peer.on('call', (mediaConnection) => {
+      this.connectionsManager.addCall(mediaConnection.peer, null, null, mediaConnection);
+    });
+  }
+  connect (peerId, options) {
+    console.log(0)
+    this.connectionsManager.addConnection(peerId, options);
+    //do handshake 
+    //this.connectionsManager.doHandshake(peerId);
+  }
+  disconnect (alreadyDisconnected = false) {
+    this.connectionsManager.setDisconnected();
+    if (!alreadyDisconnected) this.peer.disconnect();
+  }
+  call (peerId, stream, options) {
+    this.connectionsManager.addCall(peerId, stream, options);
+  }
+  sendData(peerId, data, callback) {
+    this.connectionsManager.sendData(peerId, data, callback);
+  }
+}
+
+class connectionsManager {
+  constructor (peerObj) {
+    this.peerObj = peerObj;
+    this.connections = {};
+    this.defaultConnection = {
+      connected: false,
+      hasCall: false,
+      handshakeStage: 0,
+      connectionObject: {},
+      callbacks: {}
+    }
+  }
+
+
+  addConnection(peerId, options, connectionObject) {
+    if (this.connections[peerId] && this.connections[peerId].connected) return; //already connected, return
+    if (!this.connections[peerId]) this.connections[peerId] = {...this.defaultConnection};
+
+    options ??= {};
+    options.metadata ??= {};
+    options.metadata = {
+      ...options.metadata,
+      publicKey: USERDATA.IDENTITY_KEY.publicKey
+    }
+    if (!USERDATA.known_users[peerId]) {
+      //not a known peer 
+      USERDATA.known_users[peerId] = {
+        trusted: false,
+        handshaked: false,
+        notes: "",
+        display_name: peerId,
+        nickname: "",
+        id: peerId,
+        session_keypair: {
+          //our_keypair: {},
+          //their_public_key: ""
+        }
+      }
+    }
+    this.connections[peerId].connectionObject = connectionObject
+    this.connections[peerId].connectionObject ??= this.peerObj.connect(peerId, options);
+    this.connections[peerId].connectionObject.on('open', () => {
+      alert("TESTING")
+    })
+
+    //await this.addDataListeners(peerId);
+    saveUserData();
+  }
+  sendData(peerId, data, callback) {
+
+    let callbackId = sodium.to_base64(sodium.randombytes_buf(64));
+    this.connections[peerId].connectionObject.send({...data, callbackId});
+    this.connections[peerId].callbacks[callbackId] = callback;
+  }
+  async addDataListeners(peerId) {
+    return new Promise((resolve, reject) => {
+      console.log(0.5, this.connections[peerId])
+      this.connections[peerId].connectionObject.on('open', () => {
+        console.log(1);
+        this.connections[peerId].connectionObject.on('data', (data) => {
+          console.log(2)
+
+          if (this.connections[peerId].handshakeStage < 5) { //handshake not finished, complete handshake
+            if (data.type != "handshake") return; //error: not finished with handshake, drop message
+          }
+          //run the callback
+          if (this.connections[peerId].callbacks[data.callbackId]) {
+            this.connections[peerId].callbacks[data.callbackId](data, peerId);
+            delete this.connections[peerId].callbacks[data.callbackId];
+          }
+          return;
+          const dataFormat = {
+            type: "handshake/message/etc.",
+            callbackId: "series of random strings",
+            data: {},
+          }
+
+          //this.connections[peerId].handshakeStage has the stage (0-5)
+          //init request
+          //receive response
+          //verify JWT
+          //send JWT response 
+
+        });
+        console.log(3);
+        resolve();
+      });
+    })
+  }
+
+  doHandshake(peerId) {
+    if (USERDATA.known_users[peerId].handshaked == false) {
+      //do add user handshake 
+    } else {
+      const keypair = sodium.crypto_box_keypair();
+      USERDATA.known_users[peerId].session_keypair = {
+        our_keypair: keypair
+      }
+      this.sendData(peerId, {
+        type: "handshake",
+        data: {
+          stage: 0,
+          publicKey: keypair.publicKey,
+          publicKey_signed: cw.signMessage(sodium.to_base64(keypair.publicKey))
+        }
+      }, (data) => {
+        console.log(data);
+      })
+    }
+  }
+
+  addCall (peerId, stream, options, mediaConnection = null) {
+    if (!this.connections[peerId] || !this.connections[peerId].connected) this.addConnection(peerId, options); // if not connected, connect
+    if (this.connections[peerId] && this.connections[peerId].connected && this.connections[peerId].hasCall) return;
+    this.connections[peerId].mediaConnection = mediaConnection || this.peerObj.call(peerId, stream, options);
+  }
+}

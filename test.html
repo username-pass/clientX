@@ -1,51 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Libsodium.js Example</title>
-</head>
-<body>
-  <script src="./dependencies/sodium.js"></script>
-  <script>
-    async function runLibsodiumExample() {
-      // Load libsodium.js
-      await sodium.ready;
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Libsodium.js Example</title>
+  </head>
+  <body>
+    <script src="./scripts/dependencies/peerjs.min.js"></script>
+    <script>
 
-      // Generate keypair
-      const keypair = sodium.crypto_box_keypair();
+      // Function to add listeners to a peer object
+      function addListeners(peerObj) {
+        // Listen for when the peer connection opens
+        peerObj.on('open', (id) => {
+          console.log(`Peer ${id} is now open`);
+        });
 
-      // Asymmetrically encode a message
-      const message = "Hello, Libsodium.js!";
-      const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-      const encryptedMessage = sodium.crypto_box_seal(message, keypair.publicKey);
+        // Listen for incoming connections
+        peerObj.on('connection', (dataConnection) => {
+          console.log('Incoming connection detected');
 
-      // Log the encoded message
-      console.log("Encoded Message:", encryptedMessage);
+          // Add listeners to the data connection
+          addConnListeners(dataConnection);
+        });
+      }
 
-      // Decode the message using the public key
-      const decryptedMessage = sodium.crypto_box_seal_open(encryptedMessage, keypair.publicKey, keypair.privateKey);
+      // Function to add listeners to a data connection
+      function addConnListeners(dataConnection) {
+        // Listen for when data is received
+        dataConnection.on('data', (data) => {
+          console.log(`Data received: ${data}`);
+        });
 
-      // Log the decoded message
-      console.log("Decoded Message:", decryptedMessage);
-      console.log("decoded:",new TextDecoder().decode(decryptedMessage));
+        // Listen for when the connection is opened
+        dataConnection.on('open', () => {
+          console.log('Data connection is now open');
+        });
 
-      // Sign a message using the private key
-      const signature = sodium.crypto_sign_detached(message, keypair.privateKey);
+        // Listen for when the connection is closed
+        dataConnection.on('close', () => {
+          console.log('Data connection is closed');
+        });
 
-      // Verify the signature using the public key
-      const isValidSignature = sodium.crypto_sign_verify_detached(signature, message, keypair.publicKey);
+        // Listen for errors
+        dataConnection.on('error', (err) => {
+          console.error('Data connection error:', err);
+        });
+      }
 
-      // Log the signature and verification result
-      console.log("Signature:", signature);
-      console.log("Signature Verification Result:", isValidSignature);
-    }
+      // Create two different peers
+      const peer1 = new Peer();
+      const peer2 = new Peer();
 
-    // Run the example when the page loads
-    runLibsodiumExample();
-  </script>
-</body>
+      // Add listeners to both peers
+      addListeners(peer1);
+      addListeners(peer2);
+    </script>
+  </body>
 </html>
