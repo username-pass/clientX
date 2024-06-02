@@ -1,209 +1,267 @@
-class WrappedPeer{
-  constructor (id, options) {
-
+class WrappedPeer {
+  constructor(id, options) {
+    this.id = USERDATA.PEER_ID || id || '0' + sodium.to_base64(sodium.randombytes_buf(62)) + 'x';
     options ??= {};
-    
-
-    // Options object for Peer constructor
-    options = {
-      ...options,
-      debug: 3
-    };
-
-    //create peerId 
-    this.id ??= USERDATA.PEER_ID || id || '0'+sodium.to_base64(sodium.randombytes_buf(62))+'x';
-    this.peer = new Peer(this.id, options); // raw peer object 
-    this.connectionsManager = new ConnectionsManager(this.peer); //connection manager 
-    this.initListeners(); //add listeners for th peer object
+    this.peer = new Peer(this.id, options); // raw peer object
+    this.connections = {};
+    this.cw = new CryptoWrapper(sodium); // Initialize CryptoWrapper
+    this.identityKeyPair = USERDATA.IDENTITY_KEY; // Generate identity key pair
+    this.identityKeyPair = sodium.crypto_box_keypair();
+    this.addPeerListeners();
+    this.isPeerOpen = false;
   }
-  initListeners () {
+
+  addPeerListeners() {
+    this.peer.on('open', () => {
+      this.isPeerOpen = true;
+    });
     this.peer.on('disconnected', () => {
-      this.disconnect(true);
-    });
-    this.peer.on('close', () => {
-      this.disconnect(true);
-    });
-    this.peer.on('error', (err) => {
-      if (err.type == 'disconnected') this.disconnect(true);
-      console.log(err);
+      this.isPeerOpen = false;
     });
     this.peer.on('connection', (dataConnection) => {
-      this.connectionsManager.addConnection(dataConnection.peer, null, dataConnection);
+      this.addConnection(dataConnection.peer, {}, dataConnection);
     });
-    this.peer.on('call', (mediaConnection) => {
-      this.connectionsManager.addCall(mediaConnection.peer, null, null, mediaConnection);
+    this.peer.on('error', (err) => {
+      console.log('error:', err);
+    });
+    this.peer.on('close', () => {
+      this.isPeerOpen = false;
     });
   }
-  connect (peerId, options) { //connect to a new peer by Id
-    console.log(0)
-    this.connectionsManager.addConnection(peerId, options);
-    //do handshake 
-    //this.connectionsManager.doHandshake(peerId);
-  }
-  disconnect (alreadyDisconnected = false) {
-    this.connectionsManager.setDisconnected();
-    if (!alreadyDisconnected) this.peer.disconnect();
-  }
-  call (peerId, stream, options) {
-    this.connectionsManager.addCall(peerId, stream, options);
-  }
-  sendData(peerId, data, callback) {
-    this.connectionsManager.sendData(peerId, data, callback);
-  }
-}
 
-class ConnectionsManager {
-  constructor (peerObj) {
-    this.peerObj = peerObj;
-    this.connections = {};
-    this.defaultCallbacks = {};
-    this.defaultConnection = {
-      connected: false,
-      hasCall: false,
-      handshakeStage: 0,
-      connectionObject: {},
-      callbacks: {}
+  addConnection(peerId, options, dataConnection) {
+    //initHandshake is if you are initiating the connection
+    let isInitiator = false;
+    if (!dataConnection) {
+      isInitiator = true;
     }
-  }
+    let firstHandshakeAckRequest = null;
+    // if the connection exists, add it to the connections, and add listeners 
+    //if the connection does not exist, connect to peer, if it connects, then add it to the connections, add listeners, and initiate handshake 
 
-  createDefaultCallbacks() {
-    this.defaultCallbacks = {
-      "handshake": (data, peerId) => {},
-      "data": (data, peerId) => {},
-      "*": (data, peerId) => {
-        console.log(data, peerId);
-      }
-      //list of all types of callbacks that would be useful when sending data between peers 
-      //1: handshake
-      //2: data
-      //3: status
-      //4: error
+    if (!isInitiator) {
 
-    }
-  }
+      this.connections[peerId] = {
+        connection: dataConnection,
+        isHandshakeComplete: false,
+        ourKeyPair: sodium.crypto_box_keypair(),
+        theirPublicKey: sodium.from_base64(dataConnection.metadata.A.publicKey),
+        theirIdentityKey: sodium.from_base64(dataConnection.metadata.A.identityKey),
+        theirSignedPublicKey: sodium.from_base64(dataConnection.metadata.A.signedPublicKey),
+        handshakeStage: 0,
+        open: false 
+      };
+      dataConnection.metadata.B ??= {}; 
+      dataConnection.metadata.B.publicKey = sodium.to_base64(this.connections[peerId].ourKeyPair.publicKey);
+      dataConnection.metadata.B.identityKey = sodium.to_base64(USERDATA.IDENTITY_KEY.publicKey);
+      dataConnection.metadata.B.signedPublicKey = sodium.to_base64(cw.signMessage(dataConnection.metadata.B.publicKey));
 
-  // connect to new peer with id (or, if receiving a connection, add a new connection with an alredy generated connection object)
-  addConnection(peerId, options, connectionObject) {
-    if (this.connections[peerId] && this.connections[peerId].connected) return; //already connected, return
-    if (!this.connections[peerId]) this.connections[peerId] = {...this.defaultConnection}; // create a new connection in the connections object (for keeping track of connections)
-
-    options ??= {};
-    options.metadata ??= {};
-    options.metadata = {
-      ...options.metadata,
-      publicKey: USERDATA.IDENTITY_KEY.publicKey //set the publicKey (for handshake later)
-    }
-    // if it's not an already known user, add to known user list 
-    // this bit can be ignored
-    if (!USERDATA.known_users[peerId]) {
-      //not a known peer 
-      USERDATA.known_users[peerId] = {
-        trusted: false,
-        handshaked: false,
-        notes: "",
-        display_name: peerId,
-        nickname: "",
-        id: peerId,
-        session_keypair: {
-          //our_keypair: {},
-          //their_public_key: ""
+      const isNewUser = !USERDATA.known_users[peerId];
+      if (isNewUser) {
+        USERDATA.known_users[peerId] = {
+          identityKey: this.connections[peerId].theirIdentityKey,
+          isTrusted: false,
+          notes: "",
+          displayName: peerId.substr(0, 20),
+          nickname: peerId.substr(0, 20),
+          id: peerId,
+          signedId: cw.signMessage(peerId+"signed_id")
         }
       }
-    }
-    //set it to connection object, if it exists (receiving connection)
-    this.connections[peerId].connectionObject = connectionObject
-    //if it's not already connected, connect to the id 
-    this.connections[peerId].connectionObject ??= this.peerObj.connect(peerId, options);
+      saveUserData();
 
-    this.connections[peerId].connectionObject.on('error', (err) => {
-      console.log(err);
-    })
-    //testing to see if it opens (This event never fires)
-    //this.connections[peerId].connectionObject.on('open', () => {
-    //  alert("TESTING")
-    //})
-
-    this.addDataListeners(peerId);
-    saveUserData();
-  }
-  sendData(peerId, data, callback) {
-
-    let callbackId = sodium.to_base64(sodium.randombytes_buf(64));
-    this.connections[peerId].connectionObject.send({...data, callbackId});
-    this.connections[peerId].callbacks[callbackId] = callback;
-  }
-  async addDataListeners(peerId) {
-    return new Promise((resolve, reject) => {
-      console.log(0.5, this.connections[peerId])
-      
-      this.connections[peerId].connectionObject.on('open', () => {
-        console.log(1);
-
-        this.connections[peerId].connectionObject.on('data', (data) => {
-          console.log(2)
-          console.log("received data",data);
-          let returnData = {};
-          if (this.connections[peerId].handshakeStage < 5) { //handshake not finished, complete handshake
-            if (data.type != "handshake") return; //error: not finished with handshake, drop message
-          }
-          
-          //run the callback
-          if (this.connections[peerId].callbacks[data.callbackId]) {
-            returnData = this.connections[peerId].callbacks[data.callbackId](data, peerId);
-            delete this.connections[peerId].callbacks[data.callbackId];
-          } else if (this.defaultCallbacks[data.type]) {
-            returnData = this.defaultCallbacks[data.type](data, peerId);
-          } else {
-            returnData = this.defaultCallbacks["*"](data, peerId);
-          }
-          //send returnData back to peer, if it's not an empty object
-          if (Object.keys(returnData).length > 0) {
-            this.sendData(peerId, returnData);
-          }
-          return;
-          const dataFormat = {
-            type: "handshake/message/etc.",
-            callbackId: "series of random strings",
-            data: {/* data goes here, can be object, or string, or anything */},
-          }
-
-          //this.connections[peerId].handshakeStage has the stage (0-5)
-          //init request
-          //receive response
-          //verify JWT
-          //send JWT response 
-
-        });
-        console.log(3);
-        resolve();
-      });
-    })
-  }
-
-  doHandshake(peerId) {
-    if (USERDATA.known_users[peerId].handshaked == false) {
-      //do add user handshake 
-    } else {
-      const keypair = sodium.crypto_box_keypair();
-      USERDATA.known_users[peerId].session_keypair = {
-        our_keypair: keypair
-      }
-      this.sendData(peerId, {
+      //verify their data 
+      //cw.verifySignature(signedData, data, publicKey)
+      let [ID, signedID] = dataConnection.peer.slice(1,-1).split(' '); //get all but the first and last characters of the id
+      signedID = sodium.from_base64(signedID);
+      const isIdentityKeyValid = cw.verifySignature(signedID, ID, this.connections[peerId].theirIdentityKey) &&
+        cw.verifySignature(this.connections[peerId].theirSignedPublicKey, sodium.to_base64(this.connections[peerId].theirPublicKey), this.connections[peerId].theirIdentityKey) &&
+        (isNewUser || isEqualArray(USERDATA.known_users[peerId].identityKey, this.connections[peerId].theirIdentityKey));
+      console.log(isIdentityKeyValid);
+      if (!isIdentityKeyValid) return; //TODO: better invalid key handling
+      this.connections[peerId].handshakeStage = 1;
+      firstHandshakeAckRequest = {
         type: "handshake",
+        status: {
+          code: 200,
+          message: "your identity key is valid"
+        },
         data: {
-          stage: 0,
-          publicKey: keypair.publicKey,
-          publicKey_signed: cw.signMessage(sodium.to_base64(keypair.publicKey))
+          B: dataConnection.metadata.B
         }
-      }, (data) => {
-        console.log(data);
-      })
+      };
+      console.log("handshake part 1, finished")
+      if (this.connections[peerId].open) {
+        console.log("sending through A");
+        dataConnection.send(firstHandshakeAckRequest);
+      }
+
+    } else {
+      options ??= {};
+      options.metadata ??= {}
+      options.metadata.A ??= {};
+      this.connections[peerId] = {
+        connection: null,
+        isHandshakeComplete: false,
+        ourKeyPair: sodium.crypto_box_keypair(),
+        theirPublicKey: null,
+        theirIdentityKey: null,
+        theirSignedPublicKey: null,
+        handshakeStage: 0,
+        open: false
+      }
+      //set metadata to our keys, and sign them 
+      options.metadata.A.publicKey = sodium.to_base64(this.connections[peerId].ourKeyPair.publicKey);
+      options.metadata.A.identityKey = sodium.to_base64(USERDATA.IDENTITY_KEY.publicKey);
+      options.metadata.A.signedPublicKey = sodium.to_base64(cw.signMessage(options.metadata.A.publicKey));
+
+      //connect
+      dataConnection = this.peer.connect(peerId, options);
+      this.connections[peerId].connection = dataConnection;
+
+
+
+      //init handshake
     }
+    dataConnection.on('open', () => {
+      console.log("Connection Opened");
+      this.connections[peerId].open = true;
+      console.log(isInitiator, this.connections[peerId])
+
+      if (!isInitiator && this.connections[peerId].handshakeStage == 1) {
+        console.log("sending through B");
+        dataConnection.send(firstHandshakeAckRequest);
+      }
+
+    });
+    dataConnection.on('data', (data) => {
+      console.log(data)
+      this.handleIncomingData(peerId, data);
+    });
+    dataConnection.on('close', () => {
+      this.connections[peerId].open = false;
+    });
   }
 
-  addCall (peerId, stream, options, mediaConnection = null) {
-    if (!this.connections[peerId] || !this.connections[peerId].connected) this.addConnection(peerId, options); // if not connected, connect
-    if (this.connections[peerId] && this.connections[peerId].connected && this.connections[peerId].hasCall) return;
-    this.connections[peerId].mediaConnection = mediaConnection || this.peerObj.call(peerId, stream, options);
+  handleHandshake(peerId, req) {
+    const data = req.data;
+    const connection = this.connections[peerId];
+    if (connection.handshakeStage == 0) {
+
+      if (req.status.code != 200) {
+        console.log("Handshake failed, code: ", data.status)
+        return;
+      }
+      //we are the initiators 
+      connection.handshakeStage = 1;
+
+      console.log(data)
+
+      const isNewUser = !USERDATA.known_users[peerId];
+
+      connection.theirPublicKey = sodium.from_base64(data.B.publicKey);
+      connection.theirIdentityKey = sodium.from_base64(data.B.identityKey);
+      connection.theirSignedPublicKey = sodium.from_base64(data.B.signedPublicKey);
+
+      let [ID, signedID] = connection.connection.peer.slice(1,-1).split(' '); //get all but the first and last characters of the id
+      signedID = sodium.from_base64(signedID);
+
+      const isIdentityKeyValid = cw.verifySignature(signedID, ID, this.connections[peerId].theirIdentityKey) &&
+        cw.verifySignature(this.connections[peerId].theirSignedPublicKey, sodium.to_base64(this.connections[peerId].theirPublicKey), this.connections[peerId].theirIdentityKey) &&
+        (isNewUser || isEqualArray(USERDATA.known_users[peerId].identityKey, this.connections[peerId].theirIdentityKey));
+
+      if (isNewUser) {
+        USERDATA.known_users[peerId] = {
+          identityKey: this.connections[peerId].theirIdentityKey,
+          isTrusted: false,
+          notes: "",
+          displayName: peerId.substr(0, 20),
+          nickname: peerId.substr(0, 20),
+          id: peerId,
+          signedId: cw.signMessage(peerId+"signed_id")
+        }
+      }
+      saveUserData();
+
+      console.log(isIdentityKeyValid)
+      connection.handshakeStage = 2;
+
+      let status = {
+        code: 200,
+        message: "handshake complete"
+      }
+      if (!isIdentityKeyValid) {
+        status = {
+          code: 403,
+          message: "identity key is not valid"
+        }
+      }
+      connection.connection.send({
+        type: "handshake",
+        status,
+        data: { null: null }
+      })
+    } else if (connection.handshakeStage == 1) {
+
+      if (req.status.code != 200) {
+        console.log("Handshake failed, code: ", req.status)
+        return;
+      }
+      connection.handshakeStage = 2;
+      connection.connection.send({
+        type: "handshake",
+        status: {
+          code: 200,
+          message: "handshake complete"
+        },
+        data: { null: null }
+      });
+      console.log("handshake complete")
+    } else if (connection.handshakeStage == 2) {
+
+      if (req.status.code != 200) {
+        console.log("Handshake failed, code: ", req.status)
+        return;
+      }
+      console.log("handshake fully complete")
+    } else {
+      console.log("weird handshake message:",req)
+    } 
+  }
+
+  handleIncomingData(peerId, data) {
+    console.log('Incoming data:', data);
+    const connection = this.connections[peerId];
+
+    if (data.type === 'handshake' && connection.handshakeStage <= 2) {
+      this.handleHandshake(peerId, data); 
+    } else if (connection.handshakeStage > 2) {
+      data.encrypted = sodium.from_base64(data.encrypted);
+      data.nonce = sodium.from_base64(data.nonce);
+      data.publicKey = sodium.from_base64(data.publicKey);
+      const decryptedMessage = this.cw.decryptMessage(data.encrypted, data.nonce, data.publicKey, this.identityKeyPair.privateKey);
+      console.log('Received message:', decryptedMessage);
+    }
+  }
+  //cw.encryptMessage(message, sharedSecret, publicKey)
+  //cw.decryptMessage(encrypted, nonce, publicKey, privateKey)
+  sendMessage(peerId, message) {
+    if (typeof message !== 'object') {
+      message = { data: message };
+    }
+    message = JSON.stringify(message);
+    const connection = this.connections[peerId];
+    if (connection && connection.isHandshakeComplete) {
+      const encryptedMessage = this.cw.encryptMessage(message, connection.ephemeralKeyPair.publicKey, this.identityKeyPair.privateKey);
+      const messagePacket = {
+        type: 'message',
+        encrypted: sodium.to_base64(encryptedMessage.encrypted),
+        nonce: sodium.to_base64(encryptedMessage.nonce),
+        publicKey: sodium.to_base64(this.identityKeyPair.publicKey)
+      };
+      connection.connection.send(messagePacket);
+    } else {
+      console.log('Handshake not complete or connection does not exist for peer:', peerId);
+    }
   }
 }

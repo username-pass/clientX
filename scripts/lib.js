@@ -19,6 +19,8 @@ function loadEruda() {
 //create a new user data profile
 function newUserData () {
   const {publicKey, privateKey} = sodium.crypto_sign_keypair();
+  const peer_random = sodium.to_base64(sodium.randombytes_buf(64));
+  const peer_id = '0'+peer_random+' '+sodium.to_base64(cw.signMessage(peer_random,privateKey))+'x';
   const out = JSON.stringify({
     "MASTER_KEY": {
       "__type": "Uint8Array",
@@ -35,7 +37,7 @@ function newUserData () {
       },
       "keyType": "ed25519"
     },
-    "PEER_ID": '0'+sodium.to_base64(sodium.randombytes_buf(64))+'x',
+    "PEER_ID": peer_id,
     "META": {
       "formatVersion": 1,
       "version": {}

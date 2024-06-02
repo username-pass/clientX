@@ -118,45 +118,49 @@ class FileHandlerLibrary {
         console.log(error.name, error.message);
         return 0;
       }*/
-      } else if (browser == "firefox") {
-        if (!hard) {
-            // Check if file handle exists in storage
-            const fileHandleOrUndefined = await this.dbget(this.fileKeyName);
-            if (fileHandleOrUndefined) {
-                // If file handle exists, use it
-                this.fs = fileHandleOrUndefined;
-                await this.verifyPermission(this.fs, true);
-                const fileData = await this.readData(this.fs);
-                if (fileData) {
-                    this.data = fileData;
-                }
-                return 1;
-            }
+    }
+    else if (browser === "firefox") {
+      try {
+        const fileHandleOrUndefined = await this.dbget(this.fileKeyName);
+        if (fileHandleOrUndefined && !hard) {
+          this.fs = fileHandleOrUndefined;
+          await this.verifyPermission(this.fs, true);
+          const fileData = await this.readData(this.fs);
+          if (fileData) {
+            this.data = fileData;
+          }
+          return 1;
         }
-        if (confirm("Create a new save file?")) {
-            // Create a new file
-            const opts = {
-                type: 'save-file'
-            };
-            const handle = await window.showOpenFileDialog(opts);
+
+        // Check if File System Access API is supported
+        if ('showOpenFilePicker' in window) {
+          if (confirm("Create a new save file?")) {
+            const handle = await window.showSaveFilePicker();
             this.fs = handle;
             await this.dbset(this.fileKeyName, this.fs);
             return 3;
-        } else {
-            // Pick an existing file
-            const opts = {
-                type: 'open-file'
-            };
-            const handle = await window.showOpenFileDialog(opts);
-            this.fs = handle;
+          } else {
+            const handle = await window.showOpenFilePicker();
+            this.fs = handle[0];
             await this.dbset(this.fileKeyName, this.fs);
             const fileData = await this.readData(this.fs);
             if (fileData) {
-                this.data = fileData;
-                return 2;
+              this.data = fileData;
+              return 2;
             }
+          }
+        } else {
+          // Fallback behavior for browsers that do not support File System Access API
+          console.error("File System Access API is not supported in this browser.");
+          return 0;
         }
+      } catch (error) {
+        console.error("Error in Firefox initFileSystem:", error);
         return 0;
+      }
+    }else {
+      console.error("Unsupported browser:", browser);
+      return 0;
     }
   }
 

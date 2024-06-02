@@ -6,28 +6,34 @@
   "IDENTITY_KEY": {
     "publicKey": {
       "__type": "Uint8Array",
-      "data": "m3099lom5HoF/Bndl5OkgsOqDXMLtWdKQyDfzTBqDXk="
+      "data": "gYwvsjPI0H0ua49iVfHEL2CGIdIkPekZT3bYMQXPVFs="
     },
     "privateKey": {
       "__type": "Uint8Array",
-      "data": "30aBn6a6u4agPuhXqdhLKqt7Nmz+wG9k3S3HzYO3/yabfT32WibkegX8Gd2Xk6SCw6oNcwu1Z0pDIN/NMGoNeQ=="
+      "data": "A5o3ye9c7WI99AZS7evOOgMhk+jNttr/EdHeMAuIyeaBjC+yM8jQfS5rj2JV8cQvYIYh0iQ96RlPdtgxBc9UWw=="
     },
     "keyType": "ed25519"
   },
-  "PEER_ID": "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx",
+  "PEER_ID": "0qnOQoUs9qjJi7pClVsOzZzH8QdPJduugRRjkmUwGrVeB_Gzy8aAJ6uk2WdQ851OGMeH2OK9bqHbKSuEbdi4lkA zQ4PC_uglRIxZTQFpVnwlrRjaIR4aT3t5oWenU3RuQYMDJ7DrETfNpUPY4YnkEhwGAgaTsD8mOsMj96PGj_RDAx",
   "META": {
     "formatVersion": 1,
     "version": {}
   },
   "known_users": {
-    "0_FETTM1Nhf3aJP6a-E75P9gIizCrwWXjBdvJ04vmva2tyO3bgHD4wxMow8FWeQnepiiRw7zFtKrZyy4z5LoyLAx": {
-      "trusted": false,
-      "handshaked": false,
+    "0hZ-7L5wrt9GmLfotYwzY4d_ikLNxXV6mK14HoAm6gkP2R9D_LFcvjbmGEfhwrJoKW2k0iVpANutEDkngWSN7PQ ZriJlgoYkY54NCSHzFp8HCOhzi6ErLA-np75zNngPDyS7NL_pj-DtpAHwbkLI63m1lQkCkMQq_XwyCTn8-f1DQx": {
+      "identityKey": {
+        "__type": "Uint8Array",
+        "data": "/Mu/gWfBHRQvDcPXPJuKesqlQGOhTz52Pv+98ZoeEUs="
+      },
+      "isTrusted": false,
       "notes": "",
-      "display_name": "0_FETTM1Nhf3aJP6a-E75P9gIizCrwWXjBdvJ04vmva2tyO3bgHD4wxMow8FWeQnepiiRw7zFtKrZyy4z5LoyLAx",
-      "nickname": "",
-      "id": "0_FETTM1Nhf3aJP6a-E75P9gIizCrwWXjBdvJ04vmva2tyO3bgHD4wxMow8FWeQnepiiRw7zFtKrZyy4z5LoyLAx",
-      "session_keypair": {}
+      "displayName": "0hZ-7L5wrt9GmLfotYwz",
+      "nickname": "0hZ-7L5wrt9GmLfotYwz",
+      "id": "0hZ-7L5wrt9GmLfotYwzY4d_ikLNxXV6mK14HoAm6gkP2R9D_LFcvjbmGEfhwrJoKW2k0iVpANutEDkngWSN7PQ ZriJlgoYkY54NCSHzFp8HCOhzi6ErLA-np75zNngPDyS7NL_pj-DtpAHwbkLI63m1lQkCkMQq_XwyCTn8-f1DQx",
+      "signedId": {
+        "__type": "Uint8Array",
+        "data": "R2sZSs77K7WqKKi7p/3ZG+JPwPL6iNXIEK65OdtUvRif85eptWy2uS79OFJ1hT/nsOIO5gya6Qt4j6hcHpQcCQ=="
+      }
     }
   },
   "channels": {}

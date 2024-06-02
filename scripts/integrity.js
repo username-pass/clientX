@@ -32,7 +32,9 @@ const secondDoc = document.documentElement.outerHTML;
   MASTER_KEY = sodium.from_base64(document.head.getAttribute('MASTER_KEY'));
   VERSION = JSON.parse(Buffer.from(document.head.getAttribute("VERSION"), 'base64'));
 
-  console.log(firstDoc == secondDoc);
+  //TODO: See which one to check, and to check if it needs to be reverted
+  //console.log(firstDoc);
+  //console.log(secondDoc);
 
   let elementsToCheck = document.querySelectorAll('body, head, body > *, head > *');
   //elementsToCheck.push(document.body);
@@ -40,7 +42,6 @@ const secondDoc = document.documentElement.outerHTML;
   let hashes = {};
   integrityLevel = 0;
   const elementsToDelete = [];
-  console.log(elementsToCheck)
   elementsToCheck.forEach(async (element) => {
     //hash the innerHTML
     const hash = sodium.to_base64(sodium.crypto_generichash(32, sodium.from_string(element.innerHTML)));
@@ -61,7 +62,6 @@ const secondDoc = document.documentElement.outerHTML;
     
 
     hashes[hash] = signatureCorrect;
-    console.log(signatureCorrect);
     
 //currently, integrity is compromised because cloudflare injects a script to the body element, which causes more issues
 
@@ -83,12 +83,12 @@ const secondDoc = document.documentElement.outerHTML;
     }
   });
   integrityLevel /= elementsToCheck.length;
-
+   
   if (integrityLevel < 1 || elementsToDelete.length > 0) {
     //integrity is compromised
     alert("Important!\nIntegrity has been compromised! ("+integrityLevel*100+"% integrity, "+elementsToDelete.length+" bad elements). \nPlease download a new version or copy immediately.");
     //delete all offending elements
-    alert(JSON.parse(elementsToDelete));
+    alert(JSON.stringify(elementsToDelete,null,2));
     console.log(elementsToDelete);
     elementsToDelete.concat(document.querySelectorAll('head *:not([cryptosignaturehash]):not([cryptosignature]), body *:not([cryptosignaturehash]):not([cryptosignature])'));
     elementsToDelete.forEach(element => {
@@ -97,8 +97,6 @@ const secondDoc = document.documentElement.outerHTML;
         element.parentNode.removeChild(element);
     });
   }
-  console.log(hashes);
-  console.log(VERSION.code_hash.parts);
 
   //console.log = _console.log();
   try {
@@ -106,7 +104,7 @@ const secondDoc = document.documentElement.outerHTML;
   } catch (err) {
     console.log(err.toString())
   }
-  loadEruda();
+  //loadEruda();
   callback();
 
 }

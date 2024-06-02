@@ -1,4 +1,4 @@
-class WrappedPeer{
+class WrappedPeer_{
   constructor (id, options) {
 
     options ??= {};
@@ -7,7 +7,6 @@ class WrappedPeer{
     // Options object for Peer constructor
     options = {
       ...options,
-      debug: 3
     };
 
     //create peerId 
@@ -52,10 +51,11 @@ class WrappedPeer{
   }
 }
 
-class ConnectionsManager {
+class ConnectionsManager_ {
   constructor (peerObj) {
     this.peerObj = peerObj;
     this.connections = {};
+    this.defaultCallbacks = {};
     this.defaultConnection = {
       connected: false,
       hasCall: false,
@@ -65,6 +65,22 @@ class ConnectionsManager {
     }
   }
 
+  createDefaultCallbacks() {
+    this.defaultCallbacks = {
+      "handshake": (data, peerId) => {},
+      "data": (data, peerId) => {},
+      "*": (data, peerId) => {
+        console.log(data, peerId);
+        this.sendData(peerId, data);
+      }
+      //list of all types of callbacks that would be useful when sending data between peers 
+      //1: handshake
+      //2: data
+      //3: status
+      //4: error
+
+    }
+  }
 
   // connect to new peer with id (or, if receiving a connection, add a new connection with an alredy generated connection object)
   addConnection(peerId, options, connectionObject) {
@@ -103,56 +119,60 @@ class ConnectionsManager {
       console.log(err);
     })
     //testing to see if it opens (This event never fires)
-    this.connections[peerId].connectionObject.on('open', () => {
-      alert("TESTING")
-    })
+    //this.connections[peerId].connectionObject.on('open', () => {
+    //  alert("TESTING")
+    //})
 
-    //await this.addDataListeners(peerId);
+    this.addDataListeners(peerId);
     saveUserData();
   }
-  sendData(peerId, data, callback) {
+  sendData(message, callback) {
+    let data = message.data;
+    let peerId = message.peerId;
 
     let callbackId = sodium.to_base64(sodium.randombytes_buf(64));
     this.connections[peerId].connectionObject.send({...data, callbackId});
     this.connections[peerId].callbacks[callbackId] = callback;
   }
-  
-  //Data listener events:
 
+  middleware (data, peerId) {
+    console.log("received data",data,"from",peerId);
+    return data;
+  }
+
+  doData(peerId, data) {
+    if (this.connections[peerId].handshakeStage < 5) {
+      if (data.type != "handshake") return;
+      //do handshake 
+
+    }
+    this.runHandler(data.type, peerId, this.middleware(data, peerId) || data);
+  }
+
+  runHandler(type, peerId, data) {
+    if (this.connections[peerId].callbacks[data.callbackId]) {
+      this.connections[peerId].callbacks[data.callbackId](data, peerId);
+      delete this.connections[peerId].callbacks[data.callbackId];
+    } else
+    if (this.defaultCallbacks[type]) {
+      this.defaultCallbacks[type](data, peerId);
+    } else 
+    if (this.defaultCallbacks["*"]) {
+      this.defaultCallbacks["*"](data, peerId);
+    }
+  }
 
   async addDataListeners(peerId) {
     return new Promise((resolve, reject) => {
       console.log(0.5, this.connections[peerId])
+
       this.connections[peerId].connectionObject.on('open', () => {
-        console.log(1);
-        this.connections[peerId].connectionObject.on('data', (data) => {
-          console.log(2)
-
-          if (this.connections[peerId].handshakeStage < 5) { //handshake not finished, complete handshake
-            if (data.type != "handshake") return; //error: not finished with handshake, drop message
-          }
-          //run the callback
-          if (this.connections[peerId].callbacks[data.callbackId]) {
-            this.connections[peerId].callbacks[data.callbackId](data, peerId);
-            delete this.connections[peerId].callbacks[data.callbackId];
-          }
-          return;
-          const dataFormat = {
-            type: "handshake/message/etc.",
-            callbackId: "series of random strings",
-            data: {},
-          }
-
-          //this.connections[peerId].handshakeStage has the stage (0-5)
-          //init request
-          //receive response
-          //verify JWT
-          //send JWT response 
-
-        });
-        console.log(3);
+        alert("TESTING")
         resolve();
       });
+      this.connections[peerId].connectionObject.on('data', (data) => {
+        this.doData(peerId, data);
+      })
     })
   }
 
@@ -160,7 +180,8 @@ class ConnectionsManager {
     if (USERDATA.known_users[peerId].handshaked == false) {
       //do add user handshake 
     } else {
-      const keypair = sodium.crypto_box_keypair();
+      //generate keypair with size 4096
+      let keypair = sodium.crypto_box_keypair();
       USERDATA.known_users[peerId].session_keypair = {
         our_keypair: keypair
       }
@@ -181,5 +202,19 @@ class ConnectionsManager {
     if (!this.connections[peerId] || !this.connections[peerId].connected) this.addConnection(peerId, options); // if not connected, connect
     if (this.connections[peerId] && this.connections[peerId].connected && this.connections[peerId].hasCall) return;
     this.connections[peerId].mediaConnection = mediaConnection || this.peerObj.call(peerId, stream, options);
+  }
+}
+
+class Message_ {
+  constructor (peerId, type, data, callback) {
+    if (typeof data != "object") data = {data: data}; // force it to be an object 
+    this.peerId = peerId
+    this.type = type
+    this.data = JSON.stringify(data) // data
+    this.callback = callback
+    this.encryptData();
+  }
+  encryptData () {
+    this.data = cw.encryptMessage(this.data, USERDATA.known_users[this.peerId].session_keypair.our_keypair);
   }
 }

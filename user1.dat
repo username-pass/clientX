@@ -6,28 +6,34 @@
   "IDENTITY_KEY": {
     "publicKey": {
       "__type": "Uint8Array",
-      "data": "wqdpReqG+b8XvmCy821OBpg+PUk3kBNYCH7sZDKta+k="
+      "data": "/Mu/gWfBHRQvDcPXPJuKesqlQGOhTz52Pv+98ZoeEUs="
     },
     "privateKey": {
       "__type": "Uint8Array",
-      "data": "2+5Xws9gFJipmF1d3ChTR+v+V8nBwhdFMPA5O8v4f6jCp2lF6ob5vxe+YLLzbU4GmD49STeQE1gIfuxkMq1r6Q=="
+      "data": "zbvlddzF2kYYHaoe3LWOba+As6hPvBzCZzB5/NYN+Q/8y7+BZ8EdFC8Nw9c8m4p6yqVAY6FPPnY+/73xmh4RSw=="
     },
     "keyType": "ed25519"
   },
-  "PEER_ID": "0_FETTM1Nhf3aJP6a-E75P9gIizCrwWXjBdvJ04vmva2tyO3bgHD4wxMow8FWeQnepiiRw7zFtKrZyy4z5LoyLAx",
+  "PEER_ID": "0hZ-7L5wrt9GmLfotYwzY4d_ikLNxXV6mK14HoAm6gkP2R9D_LFcvjbmGEfhwrJoKW2k0iVpANutEDkngWSN7PQ ZriJlgoYkY54NCSHzFp8HCOhzi6ErLA-np75zNngPDyS7NL_pj-DtpAHwbkLI63m1lQkCkMQq_XwyCTn8-f1DQx",
   "META": {
     "formatVersion": 1,
     "version": {}
   },
   "known_users": {
-    "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx": {
-      "trusted": false,
-      "handshaked": false,
+    "0qnOQoUs9qjJi7pClVsOzZzH8QdPJduugRRjkmUwGrVeB_Gzy8aAJ6uk2WdQ851OGMeH2OK9bqHbKSuEbdi4lkA zQ4PC_uglRIxZTQFpVnwlrRjaIR4aT3t5oWenU3RuQYMDJ7DrETfNpUPY4YnkEhwGAgaTsD8mOsMj96PGj_RDAx": {
+      "identityKey": {
+        "__type": "Uint8Array",
+        "data": "gYwvsjPI0H0ua49iVfHEL2CGIdIkPekZT3bYMQXPVFs="
+      },
+      "isTrusted": false,
       "notes": "",
-      "display_name": "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx",
-      "nickname": "",
-      "id": "0f6g8NmskkI8RWAhlvI64jLqx07D77MWSm1du6f3s51vND_wjFyShTZGb47Hl5I6h7Bu9bThSQktc4ACVUY5LBgx",
-      "session_keypair": {}
+      "displayName": "0qnOQoUs9qjJi7pClVsO",
+      "nickname": "0qnOQoUs9qjJi7pClVsO",
+      "id": "0qnOQoUs9qjJi7pClVsOzZzH8QdPJduugRRjkmUwGrVeB_Gzy8aAJ6uk2WdQ851OGMeH2OK9bqHbKSuEbdi4lkA zQ4PC_uglRIxZTQFpVnwlrRjaIR4aT3t5oWenU3RuQYMDJ7DrETfNpUPY4YnkEhwGAgaTsD8mOsMj96PGj_RDAx",
+      "signedId": {
+        "__type": "Uint8Array",
+        "data": "PLHI/iMBvi0ZoI4+Hrn/69D1pIbFf0ccbrcT36LduQ9W6bPAdjsCoPatSa6GaqabYpDR50yHy19mcMIPDpm/Dg=="
+      }
     }
   },
   "channels": {}

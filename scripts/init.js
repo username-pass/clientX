@@ -31,8 +31,6 @@ async function init() {
     return new Promise((resolve, reject) => {
       let wrapper = document.createElement("div");
       wrapper.id = "login-prompt-wrapper";
-      console.log(document.body)
-      console.log(wrapper)
       document.body.appendChild(wrapper);
       let loginPrompt = document.createElement("div");
       loginPrompt.id = "login-prompt";

@@ -2,8 +2,8 @@ class CryptoWrapper {
   constructor (sodium) {
     this._s = sodium;
   }
-  encryptMessage(message, recipientPublicKey, privateKey) {
-    const nonce = this._s.randombytes_buf(this._s.crypto_box_NONCEBYTES);
+  encryptMessage(message, recipientPublicKey, privateKey, nonce) {
+    nonce ??= this._s.randombytes_buf(this._s.crypto_box_NONCEBYTES);
     const encrypted = this._s.crypto_box_easy(message, nonce, recipientPublicKey, privateKey);
     return { encrypted, nonce };
   }
@@ -15,9 +15,8 @@ class CryptoWrapper {
   }
 
   // Sign message using own secret key
-  signMessage(message) {
-    console.log(USERDATA.IDENTITY_KEY.privateKey)
-    return this._s.crypto_sign_detached(message, USERDATA.IDENTITY_KEY.privateKey);
+  signMessage(message, privateKey = USERDATA.IDENTITY_KEY.privateKey) {
+    return this._s.crypto_sign_detached(message, privateKey);
   }
 
   // Verify signature using sender's public key
