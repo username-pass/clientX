@@ -1,5 +1,5 @@
 <head>
-  <script>var USERDATA, MASTER_KEY, VERSION, fs, cw, userPeer, sodium;</script>
+  <script>var USERDATA, MASTER_KEY, VERSION, fs, cw, userPeer, sodium, originalDoc;</script>
 
   <script src="scripts/dependencies/buffer.js"></script>
   <script src="scripts/dependencies/peerjs.min.js"></script>
@@ -9,11 +9,23 @@
   <script src="scripts/filesystem.js"></script>
   <script src="scripts/Version.js"></script>
   <script src="scripts/WrappedPeer.js"></script>
+
+  <!-- Scripts and code go here -->
+  <script>
+    window.onPeerLoad = () => {
+      userPeer = new WrappedPeer();
+      //put your init function here
+    }
+  </script>
+
+  <!-- end scripts and code-->
+
   <script src="scripts/init.js"></script>
   <script src="scripts/integrity.js"></script>
 
   <script src="scripts/dependencies/sodium.js"></script>
   <!-- <script src="scripts/dependencies/eruda.js"></script> -->
+
 
 </head>
 

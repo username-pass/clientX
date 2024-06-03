@@ -1,4 +1,5 @@
 const fs = require('fs');
+//const dotenv = require('dotenv');
 const sodium = require('libsodium-wrappers');
 const { JSDOM } = require('jsdom');
 const express = require('express');
@@ -17,25 +18,35 @@ app.get('/', (req, res) => {
 })
 
 app.use(express.static(path.join(__dirname,'.')))
-console.log("app listening on port 3003");
-app.listen(3003);
-(async() => {
+//console.log("app listening on port 3003");
+//app.listen(3003);
+
+
+//import minify function 
+
+
+async function writeOutputFile(vm = 1)  {
   await sodium.ready;
 
-  const MASTER_KEY_PRIVATE = Uint8Array.from(Buffer.from("HsIxv1qaCjlKygaFfqfsRFGc02eG4O2VUhkpzareEmT1AIbM5LJOSRDkmYIAAHHKnZ2xAY10QowpY7oy3nQpRg==", 'base64'));
-  const MASTER_KEY = Uint8Array.from(Buffer.from("9QCGzOSyTkkQ5JmCAABxyp2dsQGNdEKMKWO6Mt50KUY=", 'base64'));
-  const TURN_TOKEN_ID = "e4043e2a87c8f5e07f4ea4a59551d1cb";
-  const TURN_API_TOKEN = "ea43b41ae4f4764b5285c47aca1fca5881f04388a66c14835242c68d1b22ca41";
+  //read master key from .env
+
+  const MASTER_KEYS = JSON.parse(fs.readFileSync('master_keys.json', 'utf8'));
+
+  const MASTER_KEY_PRIVATE = Uint8Array.from(Buffer.from(MASTER_KEYS.PRIVATE, 'base64'));
+  const MASTER_KEY = Uint8Array.from(Buffer.from(MASTER_KEYS.PUBLIC, 'base64'));
   //write a comment explaining the regex variable
   //a regex that matches for script tags in the html file and returns the filepath of the script file in the match group named 'filepath' 
   const regex = /<!--.*?|<script src="(?<filepath>[^"]+)"><\/script>/g;
   
   
   
+  const version_major = vm;
+  const version_minor = 0;
+  const version_patch = 0;
 
-  const version = '1.0.0';
+  const version = [version_major, version_minor, version_patch].join(".");
   const inputFile = 'index.html';
-  const outputFile = 'index.m.html';
+  const outputFile = 'index.V'+version_major+'.html';
   const hashes = {};
   let VERSION = {};
 
@@ -52,13 +63,17 @@ app.listen(3003);
       }
       const fileContent = fs.readFileSync(filepath, 'utf8');
       //let sigId = Buffer.from(sodium.randombytes_buf(20)).toString('base64');
-      let chunk = `<script>${fileContent}</script>`;
+      let chunk = `<script originalSrc="${filepath}">${fileContent}</script>`;
       //add chunk signature to signChunks
       return chunk;
     });
 
 
     const { document } = new JSDOM(modifiedData).window;
+
+    const newEl = document.createElement('div');
+    newEl.innerHTML = version;
+    document.body.appendChild(newEl);
 
     const elementsToSign = Array.from(document.querySelectorAll('body > *, head > *'));
     elementsToSign.push(document.querySelector('body'));
@@ -106,5 +121,7 @@ app.listen(3003);
     });
   });
 
-})();
+};
 
+writeOutputFile(1);
+writeOutputFile(2);

@@ -10,6 +10,8 @@ async function init() {
 
   //import data
   USERDATA = fs.readDataSync();
+  //if (USERDATA != "") USERDATA = deserialize(USERDATA);
+  //USERDATA = decrypt_user_data(USERDATA.data, USERDATA.salt);
   if (USERDATA != "") USERDATA = deserialize(USERDATA);
   else USERDATA = newUserData(MASTER_KEY); //new users
 
@@ -20,8 +22,11 @@ async function init() {
 
   //this is how to save
   saveUserData();
-  userPeer = new WrappedPeer();
-  
+
+  setTimeout(() => {
+    saveUserData();
+  }, 30000);
+  window.onPeerLoad(); 
 
   
 

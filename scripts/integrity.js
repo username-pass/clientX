@@ -1,4 +1,4 @@
-const firstDoc = document.documentElement.outerHTML;
+let firstDoc = document.documentElement.outerHTML;
 let loadState = {
   loaded: false,
   sodiumLoaded: false,
@@ -24,7 +24,8 @@ window.sodium = {
   }
 };
 async function checkIntegrity(strict=true, callback) {
-const secondDoc = document.documentElement.outerHTML;
+  let secondDoc = document.documentElement.outerHTML;
+  originalDoc = document.documentElement.outerHTML;
 
   cw = new CryptoWrapper(); 
   //create a crypto wrapper, to bring in a bunch of helper functions
